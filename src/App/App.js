@@ -7,6 +7,7 @@ function App() {
   const [ms, handleMs] = useState(0);
   const [sec, handleSec] = useState(0);
   const [min, handleMin] = useState(0);
+  const [hh, handleHh] = useState(0);
   const [subId, handleSubId] = useState(null);
   const [isWait, handleIsWait] = useState(null);
   const [arrayOfTimestamp, handleArrayOfTimestamp] = useState([]);
@@ -20,6 +21,7 @@ function App() {
     handleMs(0);
     handleSec(0);
     handleMin(0);
+    handleHh(0);
   }
   function resetMainSubscribe() {
     subId && subId.unsubscribe();
@@ -78,12 +80,16 @@ function App() {
       handleMin(min + 1);
     }
     if (min >= 60) {
+      handleMin(() => 0);
+      handleHh(hh + 1);
+    }
+    if (hh >= 24) {
       resetMainSubscribe();
     }
     if (isWait && arrayOfTimestamp.length === lengthArrayOfTimestamp) {
       resetWaitSubscribe();
     }
-  }, [ms, sec, min, isWait, arrayOfTimestamp]);
+  }, [ms, sec, min, hh, isWait, arrayOfTimestamp]);
 
   useEffect(() => {
     return () => {
@@ -95,7 +101,7 @@ function App() {
   return (
     <Fragment>
       <div>
-        <span>{`${min}`}</span>:<span>{`${sec}`}</span>:<span>{`${ms}`}</span>
+      <span>{`${min}`}</span>:<span>{`${min}`}</span>:<span>{`${sec}`}</span>:<span>{`${ms}`}</span>
       </div>
       <ul onClick={handleClick}>
         {buttons.map((el, idx) => {
