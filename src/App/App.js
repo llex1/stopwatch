@@ -101,7 +101,7 @@ function App() {
   return (
     <Fragment>
       <div>
-      <span>{`${min}`}</span>:<span>{`${min}`}</span>:<span>{`${sec}`}</span>:<span>{`${ms}`}</span>
+      <span>{`${hh}`}</span>:<span>{`${min}`}</span>:<span>{`${sec}`}</span>:<span>{`${ms}`}</span>
       </div>
       <ul onClick={handleClick}>
         {buttons.map((el, idx) => {
