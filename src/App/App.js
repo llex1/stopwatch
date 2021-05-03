@@ -1,118 +1,110 @@
-import { Fragment, useEffect, useState } from "react";
+// import { interval } from "rxjs";
+// import { sampleTime, switchAll, map } from "rxjs/operators";
+import { useEffect, useState } from "react";
 import { interval } from "rxjs";
-import { timestamp, take } from "rxjs/operators";
+
+import styles from "./App.module.scss";
 
 function App() {
-  const [buttons, handleButtons] = useState(["start", "wait", "reset"]);
-  const [ms, handleMs] = useState(0);
-  const [sec, handleSec] = useState(0);
-  const [min, handleMin] = useState(0);
-  const [hh, handleHh] = useState(0);
-  const [subId, handleSubId] = useState(null);
-  const [isWait, handleIsWait] = useState(null);
-  const [arrayOfTimestamp, handleArrayOfTimestamp] = useState([]);
+  const DOM = {};
+  const [additionalStyle, handelAdditionalStyle] = useState(styles.start);
+  const [subscriptions, handleSubscriptions] = useState({});
 
-  const intervalStep = 16;
-  const delayForWaitButton = 300;
-  const lengthArrayOfTimestamp = Math.floor(delayForWaitButton / intervalStep);
-  const interval$ = interval(intervalStep);
-
-  function resetValue() {
-    handleMs(0);
-    handleSec(0);
-    handleMin(0);
-    handleHh(0);
-  }
-  function resetMainSubscribe() {
-    subId && subId.unsubscribe();
-    handleSubId(null);
-  }
-  function resetWaitSubscribe() {
-    isWait && isWait.unsubscribe();
-    handleIsWait(null);
+  function fixValue(DomElement) {
+    let result = "";
+    DomElement.dataset.value.length < 2
+      ? (result = "0" + DomElement.dataset.value)
+      : (result = DomElement.dataset.value);
+    return result;
   }
 
-  function handleClick(e) {
-    e.preventDefault();
-    if (e.target.nodeName === "BUTTON" && e.target.innerText === "start") {
-      const subscribeID = interval$.subscribe((value) =>
-        handleMs((prev) => prev + intervalStep)
-      );
-      handleButtons([["stop"], ...buttons.splice(1)]);
-      handleSubId(subscribeID);
-    }
-    if (e.target.nodeName === "BUTTON" && e.target.innerText === "stop") {
-      handleButtons([["start"], ...buttons.splice(1)]);
-      resetMainSubscribe();
-      resetValue();
-    }
-    // подумати як удосконалити
-    if (e.target.nodeName === "BUTTON" && e.target.innerText === "wait") {
-      resetWaitSubscribe();
-        if (isWait && arrayOfTimestamp.length && arrayOfTimestamp.length <= lengthArrayOfTimestamp) {
-          handleButtons([["start"], ...buttons.splice(1)]);
-          resetMainSubscribe();
-        } else {
-        handleArrayOfTimestamp(()=>[])
-        const takeTimestamp = interval$.pipe(
-          timestamp(),
-          take(lengthArrayOfTimestamp)
-        );
-        const subscribeID = takeTimestamp.subscribe((value) =>
-          handleArrayOfTimestamp((prev) => {
-            return [...prev, value];
-          })
-        );
-        handleIsWait(() => subscribeID);
+  //! 23:59:59
+  function stopwatch() {
+    DOM.sec.dataset.value < 59
+      ? increment(DOM.sec)
+      : increment(DOM.min, DOM.sec);
+    function increment(incrementDomElement, resetDomElement) {
+      switch (resetDomElement) {
+        case DOM.sec:
+          handleReset([resetDomElement]);
+          ++incrementDomElement.dataset.value;
+          incrementDomElement.innerText = fixValue(incrementDomElement);
+          break;
+        case DOM.min:
+
+          break;
+        default:
+          ++incrementDomElement.dataset.value;
+          incrementDomElement.innerText = fixValue(incrementDomElement);
       }
     }
-    if (e.target.nodeName === "BUTTON" && e.target.innerText === "reset") {
-      resetValue();
+  }
+
+  function handleStart() {
+    const id = interval(100).subscribe(stopwatch);
+    handleSubscriptions({ interval: id });
+  }
+  function handleStop() {
+    subscriptions.interval?.unsubscribe();
+    handleSubscriptions({ interval: null });
+  }
+  function handleReset(arrOfDomElement) {
+    if (!arrOfDomElement) {
+      handleReset(Object.values(DOM));
+    }
+    if (arrOfDomElement) {
+      arrOfDomElement.forEach((el) => {
+        el.innerText = "00";
+        el.dataset.value = "0";
+      });
     }
   }
-  useEffect(() => {
-    if (ms >= 999) {
-      handleMs(() => 0);
-      handleSec(sec + 1);
-    }
-    if (sec >= 60) {
-      handleSec(() => 0);
-      handleMin(min + 1);
-    }
-    if (min >= 60) {
-      handleMin(() => 0);
-      handleHh(hh + 1);
-    }
-    if (hh >= 24) {
-      resetMainSubscribe();
-    }
-    if (isWait && arrayOfTimestamp.length === lengthArrayOfTimestamp) {
-      resetWaitSubscribe();
-    }
-  }, [ms, sec, min, hh, isWait, arrayOfTimestamp]);
 
+  // lifecycle methods
   useEffect(() => {
-    return () => {
-      resetMainSubscribe();
-      resetMainSubscribe();
-    };
+    DOM.sec = document.querySelector("#sec");
+    DOM.min = document.querySelector("#min");
+    DOM.hour = document.querySelector("#hour");
+  });
+  useEffect(() => {
+    return () => handleStop();
   }, []);
-
+  // lifecycle methods  ______END______
   return (
-    <Fragment>
+    <div className={styles.gridContainer}>
       <div>
-      <span>{`${min}`}</span>:<span>{`${min}`}</span>:<span>{`${sec}`}</span>:<span>{`${ms}`}</span>
+        <span id="hour" data-value="0">
+          00
+        </span>
+        :
+        <span id="min" data-value="0">
+          00
+        </span>
+        :
+        <span id="sec" data-value="0">
+          00
+        </span>
       </div>
-      <ul onClick={handleClick}>
-        {buttons.map((el, idx) => {
-          return (
-            <li key={idx}>
-              <button type="button">{el}</button>
-            </li>
-          );
-        })}
-      </ul>
-    </Fragment>
+      <button
+        type="button"
+        id="start&stop"
+        className={`${styles.btn} ${additionalStyle}`}
+        onClick={handleStart}
+      >
+        start
+      </button>
+      <button type="button" id="wait" className={styles.btn}>
+        wait
+      </button>
+      <button
+        type="button"
+        id="reset"
+        className={styles.btn}
+        onClick={() => handleReset()}
+      >
+        reset
+      </button>
+    </div>
   );
 }
 
