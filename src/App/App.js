@@ -6,7 +6,7 @@ import { interval } from "rxjs";
 import styles from "./App.module.scss";
 
 function App() {
-  const DOM = {};
+  const DOM = [];
   const [additionalStyle, handelAdditionalStyle] = useState(styles.start);
   const [subscriptions, handleSubscriptions] = useState({});
 
@@ -18,41 +18,65 @@ function App() {
     return result;
   }
 
-  //! 23:59:59
   function stopwatch() {
-    DOM.sec.dataset.value < 59
-      ? increment(DOM.sec)
-      : increment(DOM.min, DOM.sec);
-    function increment(incrementDomElement, resetDomElement) {
-      switch (resetDomElement) {
-        case DOM.sec:
-          handleReset([resetDomElement]);
-          ++incrementDomElement.dataset.value;
-          incrementDomElement.innerText = fixValue(incrementDomElement);
-          break;
-        case DOM.min:
+    DOM[0].dataset.value < +DOM[0].dataset.limit
+      ? increment([DOM[0]])
+      : newRound();
 
-          break;
-        default:
-          ++incrementDomElement.dataset.value;
-          incrementDomElement.innerText = fixValue(incrementDomElement);
+    function newRound() {
+      const [inc, res] = checkValue();
+      res.push(DOM[0]);
+      increment(inc);
+      handleReset(res);
+    }
+
+    function checkValue() {
+      const inc = [],
+        res = [];
+      for (let i = 1; i < DOM.length; i++) {
+        if (+DOM[i].dataset.value < +DOM[i].dataset.limit) {
+          inc.push(DOM[i]);
+          return [inc, res];
+        }
+        if (+DOM[i].dataset.value === +DOM[i].dataset.limit) {
+          res.push(DOM[i]);
+        }
+      }
+      return [inc, res];
+    }
+
+    function increment(arrOfDomElement) {
+      if (Array.isArray(arrOfDomElement) && arrOfDomElement.length === 1) {
+        ++arrOfDomElement[0].dataset.value;
+        arrOfDomElement[0].innerText = fixValue(arrOfDomElement[0]);
+      }
+      if (Array.isArray(arrOfDomElement) && arrOfDomElement.length > 1) {
+        arrOfDomElement.forEach((el) => {
+          ++el.dataset.value;
+          el.innerText = fixValue(el);
+        });
       }
     }
   }
 
   function handleStart() {
-    const id = interval(100).subscribe(stopwatch);
+    const id = interval(16).subscribe(stopwatch);
     handleSubscriptions({ interval: id });
   }
   function handleStop() {
     subscriptions.interval?.unsubscribe();
     handleSubscriptions({ interval: null });
   }
-  function handleReset(arrOfDomElement) {
-    if (!arrOfDomElement) {
-      handleReset(Object.values(DOM));
+  function handleReset(arrOfDomElement = DOM) {
+    if (Array.isArray(arrOfDomElement) && arrOfDomElement.length === 1) {
+      arrOfDomElement[0].innerText = "00";
+      arrOfDomElement[0].dataset.value = "0";
     }
-    if (arrOfDomElement) {
+    if (
+      arrOfDomElement &&
+      Array.isArray(arrOfDomElement) &&
+      arrOfDomElement.length > 1
+    ) {
       arrOfDomElement.forEach((el) => {
         el.innerText = "00";
         el.dataset.value = "0";
@@ -62,9 +86,8 @@ function App() {
 
   // lifecycle methods
   useEffect(() => {
-    DOM.sec = document.querySelector("#sec");
-    DOM.min = document.querySelector("#min");
-    DOM.hour = document.querySelector("#hour");
+    DOM.push(...[...document.querySelector("#clockFace").children].reverse());
+    // DOM.last = function(){return this[this.length-1]};
   });
   useEffect(() => {
     return () => handleStop();
@@ -72,19 +95,17 @@ function App() {
   // lifecycle methods  ______END______
   return (
     <div className={styles.gridContainer}>
-      <div>
-        <span id="hour" data-value="0">
+      <ul id="clockFace" className={styles.clockFace}>
+        <li data-value="0" data-limit="24">
           00
-        </span>
-        :
-        <span id="min" data-value="0">
+        </li>
+        <li data-value="0" data-limit="59">
           00
-        </span>
-        :
-        <span id="sec" data-value="0">
+        </li>
+        <li data-value="0" data-limit="59">
           00
-        </span>
-      </div>
+        </li>
+      </ul>
       <button
         type="button"
         id="start&stop"

@@ -6,8 +6,16 @@
   row-gap: .3rem
 
 }
-
-
+.clockFace {
+  list-style: none;
+  display: flex;
+  &>* {
+    &:not(:last-child)::after{
+      content: ':';
+      padding: 0 0.3rem;
+    }
+  }
+}
 
 .btn {
   padding: 0.5rem 1rem;
