@@ -7,7 +7,10 @@ import styles from "./App.module.scss";
 
 function App() {
   const DOM = [];
-  const [additionalStyle, handelAdditionalStyle] = useState(styles.start);
+  const [additionalButtonOptions, handelAdditionalButtonOptions] = useState({
+    addStyle: styles.start,
+    name: "start",
+  });
   const [subscriptions, handleSubscriptions] = useState({});
 
   function fixValue(DomElement) {
@@ -18,18 +21,38 @@ function App() {
     return result;
   }
 
+  function startStopwatch() {
+    stopStopwatch();
+    const intervalID = interval(16).subscribe(stopwatch);
+    const clickEventID = 
+    handleSubscriptions({ interval: intervalID });
+  }
+  function stopStopwatch() {
+    subscriptions.interval?.unsubscribe();
+    handleSubscriptions({ interval: null });
+  }
   function stopwatch() {
     DOM[0].dataset.value < +DOM[0].dataset.limit
       ? increment([DOM[0]])
       : newRound();
-
+    function increment(arrOfDomElement) {
+      if (Array.isArray(arrOfDomElement) && arrOfDomElement.length === 1) {
+        ++arrOfDomElement[0].dataset.value;
+        arrOfDomElement[0].innerText = fixValue(arrOfDomElement[0]);
+      }
+      if (Array.isArray(arrOfDomElement) && arrOfDomElement.length > 1) {
+        arrOfDomElement.forEach((el) => {
+          ++el.dataset.value;
+          el.innerText = fixValue(el);
+        });
+      }
+    }
     function newRound() {
       const [inc, res] = checkValue();
       res.push(DOM[0]);
       increment(inc);
       handleReset(res);
     }
-
     function checkValue() {
       const inc = [],
         res = [];
@@ -44,28 +67,22 @@ function App() {
       }
       return [inc, res];
     }
+  }
 
-    function increment(arrOfDomElement) {
-      if (Array.isArray(arrOfDomElement) && arrOfDomElement.length === 1) {
-        ++arrOfDomElement[0].dataset.value;
-        arrOfDomElement[0].innerText = fixValue(arrOfDomElement[0]);
-      }
-      if (Array.isArray(arrOfDomElement) && arrOfDomElement.length > 1) {
-        arrOfDomElement.forEach((el) => {
-          ++el.dataset.value;
-          el.innerText = fixValue(el);
-        });
-      }
+  // main handlers
+  function handleStartStop(e) {
+    if (e.target.innerText === "start") {
+      startStopwatch();
+      handelAdditionalButtonOptions({ addStyle: styles.stop, name: "stop" });
+    }
+    if (e.target.innerText === "stop") {
+      stopStopwatch();
+      handleReset();
+      handelAdditionalButtonOptions({ addStyle: styles.start, name: "start" });
     }
   }
+  function handleWait() {
 
-  function handleStart() {
-    const id = interval(16).subscribe(stopwatch);
-    handleSubscriptions({ interval: id });
-  }
-  function handleStop() {
-    subscriptions.interval?.unsubscribe();
-    handleSubscriptions({ interval: null });
   }
   function handleReset(arrOfDomElement = DOM) {
     if (Array.isArray(arrOfDomElement) && arrOfDomElement.length === 1) {
@@ -83,14 +100,13 @@ function App() {
       });
     }
   }
-
+  // main handlers   ______END______
   // lifecycle methods
   useEffect(() => {
     DOM.push(...[...document.querySelector("#clockFace").children].reverse());
-    // DOM.last = function(){return this[this.length-1]};
   });
   useEffect(() => {
-    return () => handleStop();
+    return () => stopStopwatch();
   }, []);
   // lifecycle methods  ______END______
   return (
@@ -109,12 +125,17 @@ function App() {
       <button
         type="button"
         id="start&stop"
-        className={`${styles.btn} ${additionalStyle}`}
-        onClick={handleStart}
+        className={`${styles.btn} ${additionalButtonOptions.addStyle}`}
+        onClick={handleStartStop}
       >
-        start
+        {additionalButtonOptions.name}
       </button>
-      <button type="button" id="wait" className={styles.btn}>
+      <button
+        type="button"
+        id="wait"
+        className={styles.btn}
+        onClick={handleWait}
+      >
         wait
       </button>
       <button
