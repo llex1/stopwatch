@@ -1,5 +1,3 @@
-// import { interval } from "rxjs";
-// import { sampleTime, switchAll, map } from "rxjs/operators";
 import { useEffect, useState } from "react";
 import { interval } from "rxjs";
 
@@ -20,16 +18,13 @@ function App() {
       : (result = DomElement.dataset.value);
     return result;
   }
-
-  function startStopwatch() {
-    stopStopwatch();
+  function STARTstopwatch(){
+    STOPstopwatch();
     const intervalID = interval(16).subscribe(stopwatch);
-    const clickEventID = 
     handleSubscriptions({ interval: intervalID });
-  }
-  function stopStopwatch() {
+  };
+  function STOPstopwatch() {
     subscriptions.interval?.unsubscribe();
-    handleSubscriptions({ interval: null });
   }
   function stopwatch() {
     DOM[0].dataset.value < +DOM[0].dataset.limit
@@ -69,20 +64,23 @@ function App() {
     }
   }
 
-  // main handlers
+  // ================  main handlers     ==============
   function handleStartStop(e) {
-    if (e.target.innerText === "start") {
-      startStopwatch();
+    if (additionalButtonOptions.name === "start") {
+      STARTstopwatch();
       handelAdditionalButtonOptions({ addStyle: styles.stop, name: "stop" });
     }
-    if (e.target.innerText === "stop") {
-      stopStopwatch();
+    if (additionalButtonOptions.name === "stop") {
+      STOPstopwatch();
       handleReset();
       handelAdditionalButtonOptions({ addStyle: styles.start, name: "start" });
     }
   }
   function handleWait() {
-
+    if (additionalButtonOptions.name === "stop") {
+      STOPstopwatch()
+      handelAdditionalButtonOptions({ addStyle: styles.start, name: "start" });
+    }
   }
   function handleReset(arrOfDomElement = DOM) {
     if (Array.isArray(arrOfDomElement) && arrOfDomElement.length === 1) {
@@ -100,15 +98,15 @@ function App() {
       });
     }
   }
-  // main handlers   ______END______
-  // lifecycle methods
+  // ================== main handlers END =============
+  // =============== lifecycle methods    =============
   useEffect(() => {
     DOM.push(...[...document.querySelector("#clockFace").children].reverse());
   });
   useEffect(() => {
-    return () => stopStopwatch();
+    return () => STOPstopwatch();
   }, []);
-  // lifecycle methods  ______END______
+  // ============= lifecycle methods END =============
   return (
     <div className={styles.gridContainer}>
       <ul id="clockFace" className={styles.clockFace}>
