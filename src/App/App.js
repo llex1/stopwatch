@@ -1,118 +1,152 @@
-import { Fragment, useEffect, useState } from "react";
+import React from 'react';
+import { useEffect, useState } from "react";
 import { interval } from "rxjs";
-import { timestamp, take } from "rxjs/operators";
+
+import styles from "./App.module.scss";
 
 function App() {
-  const [buttons, handleButtons] = useState(["start", "wait", "reset"]);
-  const [ms, handleMs] = useState(0);
-  const [sec, handleSec] = useState(0);
-  const [min, handleMin] = useState(0);
-  const [hh, handleHh] = useState(0);
-  const [subId, handleSubId] = useState(null);
-  const [isWait, handleIsWait] = useState(null);
-  const [arrayOfTimestamp, handleArrayOfTimestamp] = useState([]);
+  const DOM = [];
+  const [additionalButtonOptions, handelAdditionalButtonOptions] = useState({
+    addStyle: styles.start,
+    name: "start",
+  });
+  const [subscriptions, handleSubscriptions] = useState({});
 
-  const intervalStep = 16;
-  const delayForWaitButton = 300;
-  const lengthArrayOfTimestamp = Math.floor(delayForWaitButton / intervalStep);
-  const interval$ = interval(intervalStep);
-
-  function resetValue() {
-    handleMs(0);
-    handleSec(0);
-    handleMin(0);
-    handleHh(0);
+  function fixValue(DomElement) {
+    let result = "";
+    DomElement.dataset.value.length < 2
+      ? (result = "0" + DomElement.dataset.value)
+      : (result = DomElement.dataset.value);
+    return result;
   }
-  function resetMainSubscribe() {
-    subId && subId.unsubscribe();
-    handleSubId(null);
+  function STARTstopwatch(){
+    STOPstopwatch();
+    const intervalID = interval(16).subscribe(stopwatch);
+    handleSubscriptions({ interval: intervalID });
+  };
+  function STOPstopwatch() {
+    // subscriptions.interval?.unsubscribe();
+    (subscriptions.interval) && subscriptions.interval.unsubscribe();
   }
-  function resetWaitSubscribe() {
-    isWait && isWait.unsubscribe();
-    handleIsWait(null);
-  }
-
-  function handleClick(e) {
-    e.preventDefault();
-    if (e.target.nodeName === "BUTTON" && e.target.innerText === "start") {
-      const subscribeID = interval$.subscribe((value) =>
-        handleMs((prev) => prev + intervalStep)
-      );
-      handleButtons([["stop"], ...buttons.splice(1)]);
-      handleSubId(subscribeID);
-    }
-    if (e.target.nodeName === "BUTTON" && e.target.innerText === "stop") {
-      handleButtons([["start"], ...buttons.splice(1)]);
-      resetMainSubscribe();
-      resetValue();
-    }
-    // подумати як удосконалити
-    if (e.target.nodeName === "BUTTON" && e.target.innerText === "wait") {
-      resetWaitSubscribe();
-        if (isWait && arrayOfTimestamp.length && arrayOfTimestamp.length <= lengthArrayOfTimestamp) {
-          handleButtons([["start"], ...buttons.splice(1)]);
-          resetMainSubscribe();
-        } else {
-        handleArrayOfTimestamp(()=>[])
-        const takeTimestamp = interval$.pipe(
-          timestamp(),
-          take(lengthArrayOfTimestamp)
-        );
-        const subscribeID = takeTimestamp.subscribe((value) =>
-          handleArrayOfTimestamp((prev) => {
-            return [...prev, value];
-          })
-        );
-        handleIsWait(() => subscribeID);
+  function stopwatch() {
+    DOM[0].dataset.value < +DOM[0].dataset.limit
+      ? increment([DOM[0]])
+      : newRound();
+    function increment(arrOfDomElement) {
+      if (Array.isArray(arrOfDomElement) && arrOfDomElement.length === 1) {
+        ++arrOfDomElement[0].dataset.value;
+        arrOfDomElement[0].innerText = fixValue(arrOfDomElement[0]);
+      }
+      if (Array.isArray(arrOfDomElement) && arrOfDomElement.length > 1) {
+        arrOfDomElement.forEach((el) => {
+          ++el.dataset.value;
+          el.innerText = fixValue(el);
+        });
       }
     }
-    if (e.target.nodeName === "BUTTON" && e.target.innerText === "reset") {
-      resetValue();
+    function newRound() {
+      const [inc, res] = checkValue();
+      res.push(DOM[0]);
+      increment(inc);
+      handleReset(res);
+    }
+    function checkValue() {
+      const inc = [],
+        res = [];
+      for (let i = 1; i < DOM.length; i++) {
+        if (+DOM[i].dataset.value < +DOM[i].dataset.limit) {
+          inc.push(DOM[i]);
+          return [inc, res];
+        }
+        if (+DOM[i].dataset.value === +DOM[i].dataset.limit) {
+          res.push(DOM[i]);
+        }
+      }
+      return [inc, res];
     }
   }
-  useEffect(() => {
-    if (ms >= 999) {
-      handleMs(() => 0);
-      handleSec(sec + 1);
-    }
-    if (sec >= 60) {
-      handleSec(() => 0);
-      handleMin(min + 1);
-    }
-    if (min >= 60) {
-      handleMin(() => 0);
-      handleHh(hh + 1);
-    }
-    if (hh >= 24) {
-      resetMainSubscribe();
-    }
-    if (isWait && arrayOfTimestamp.length === lengthArrayOfTimestamp) {
-      resetWaitSubscribe();
-    }
-  }, [ms, sec, min, hh, isWait, arrayOfTimestamp]);
 
+  // ================  main handlers     ==============
+  function handleStartStop(e) {
+    if (additionalButtonOptions.name === "start") {
+      STARTstopwatch();
+      handelAdditionalButtonOptions({ addStyle: styles.stop, name: "stop" });
+    }
+    if (additionalButtonOptions.name === "stop") {
+      STOPstopwatch();
+      handleReset();
+      handelAdditionalButtonOptions({ addStyle: styles.start, name: "start" });
+    }
+  }
+  function handleWait() {
+    if (additionalButtonOptions.name === "stop") {
+      STOPstopwatch()
+      handelAdditionalButtonOptions({ addStyle: styles.start, name: "start" });
+    }
+  }
+  function handleReset(arrOfDomElement = DOM) {
+    if (Array.isArray(arrOfDomElement) && arrOfDomElement.length === 1) {
+      arrOfDomElement[0].innerText = "00";
+      arrOfDomElement[0].dataset.value = "0";
+    }
+    if (
+      arrOfDomElement &&
+      Array.isArray(arrOfDomElement) &&
+      arrOfDomElement.length > 1
+    ) {
+      arrOfDomElement.forEach((el) => {
+        el.innerText = "00";
+        el.dataset.value = "0";
+      });
+    }
+  }
+  // ================== main handlers END =============
+  // =============== lifecycle methods    =============
   useEffect(() => {
-    return () => {
-      resetMainSubscribe();
-      resetMainSubscribe();
-    };
+    DOM.push(...[...document.querySelector("#clockFace").children].reverse());
+  });
+  useEffect(() => {
+    return () => STOPstopwatch();
   }, []);
-
+  // ============= lifecycle methods END =============
   return (
-    <Fragment>
-      <div>
-      <span>{`${hh}`}</span>:<span>{`${min}`}</span>:<span>{`${sec}`}</span>:<span>{`${ms}`}</span>
-      </div>
-      <ul onClick={handleClick}>
-        {buttons.map((el, idx) => {
-          return (
-            <li key={idx}>
-              <button type="button">{el}</button>
-            </li>
-          );
-        })}
+    <div className={styles.gridContainer}>
+      <ul id="clockFace" className={styles.clockFace}>
+        <li data-value="0" data-limit="24">
+          00
+        </li>
+        <li data-value="0" data-limit="59">
+          00
+        </li>
+        <li data-value="0" data-limit="59">
+          00
+        </li>
       </ul>
-    </Fragment>
+      <button
+        type="button"
+        id="start&stop"
+        className={`${styles.btn} ${additionalButtonOptions.addStyle}`}
+        onClick={handleStartStop}
+      >
+        {additionalButtonOptions.name}
+      </button>
+      <button
+        type="button"
+        id="wait"
+        className={styles.btn}
+        onClick={handleWait}
+      >
+        wait
+      </button>
+      <button
+        type="button"
+        id="reset"
+        className={styles.btn}
+        onClick={() => handleReset()}
+      >
+        reset
+      </button>
+    </div>
   );
 }
 
