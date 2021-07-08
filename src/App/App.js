@@ -1,3 +1,4 @@
+import React from 'react';
 import { useEffect, useState } from "react";
 import { interval } from "rxjs";
 
@@ -24,7 +25,8 @@ function App() {
     handleSubscriptions({ interval: intervalID });
   };
   function STOPstopwatch() {
-    subscriptions.interval?.unsubscribe();
+    // subscriptions.interval?.unsubscribe();
+    (subscriptions.interval) && subscriptions.interval.unsubscribe();
   }
   function stopwatch() {
     DOM[0].dataset.value < +DOM[0].dataset.limit
