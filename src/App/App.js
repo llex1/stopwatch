@@ -5,6 +5,8 @@ import { interval } from "rxjs";
 import styles from "./App.module.scss";
 
 function App() {
+
+
   const DOM = [];
   const [additionalButtonOptions, handelAdditionalButtonOptions] = useState({
     addStyle: styles.start,
